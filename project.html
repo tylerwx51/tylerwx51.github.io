@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <style>
+    .flex-container {
+      display: flex;
+      align-items: stretch;
+    }
+
+    .world-button {
+      font-size: 20px
+    }
+
+    .world-box {
+      display: inline-block;
+      height: 16px;
+      width: 16px;
+      margin: 1px 4px 1px 0px;
+    }
+
+    </style>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
     <title>Hero Database Explorer</title>
     <link rel="stylesheet" type="text/css" href="parallel.css" />
@@ -22,12 +40,21 @@
     </div>
     <div style="clear:both;"></div>
   </div>
-  <div id="chart">
-    <canvas id="background"></canvas>
-    <canvas id="foreground"></canvas>
-    <canvas id="highlight"></canvas>
-    <svg></svg>
+
+  <div class="flex-container">
+    <div id="chart" style="flex-grow:8">
+      <canvas id="background"></canvas>
+      <canvas id="foreground"></canvas>
+      <canvas id="highlight"></canvas>
+      <svg></svg>
+    </div>
+    <div style="width: 100px">
+      <div style="width: 100px; height: 100px"></div>
+      <div id="buttons">
+      </div>
+    </div>
   </div>
+
   <div id="wrap">
     <div class="third" id="controls">
       <div class="bright">
@@ -83,7 +110,7 @@
     </div>
   </div>
   </body>
-  <script src='https://d3js.org/d3.v2.js'></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.9.0/underscore-min.js"></script>
+  <script src='http://d3js.org/d3.v2.js'></script>
+  <script src="http://underscorejs.org/underscore.js"></script>
   <script src="hero_parallel.js"></script>
 </html>

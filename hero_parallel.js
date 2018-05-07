@@ -6,7 +6,7 @@ var width = document.body.clientWidth,
     height = d3.max([document.body.clientHeight-540, 240]);
 
 var m = [60, 0, 10, 0], // margin
-    w = width - m[1] - m[3], // width
+    w = width - m[1] - m[3] - 100, // width
     h = height - m[0] - m[2], // height
     xscale = d3.scale.ordinal().rangePoints([0, w], 1),
     yscale = {},
@@ -55,7 +55,7 @@ var colors = {
 };
 
 var svg = d3.select("svg")
-    .attr("width", w + m[1] + m[3])
+    .attr("width", w)
     .attr("height", h + m[0] + m[2])
     .append("svg:g")
     .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
@@ -68,7 +68,7 @@ function process_raw_comics(raw_data) {
             if (!_.isNaN(raw_data[0][k]) && k == 'YEAR') {
                 d[k] = parseInt(d[k]) || 2014;
             }
-            if (!_.isNaN(raw_data[0][k]) && _.contains(['SEX_id', 'ALIGN_id', 'GSM_id', 'ALIVE_id', 'ID_id'], k)) {
+            if (!_.isNaN(raw_data[0][k]) && _.contains(['Sex', 'Align', 'Sexuality', 'Alive', 'Identity'], k)) {
                 d[k] = parseFloat(d[k]) || 0;
             }
         };
@@ -77,7 +77,7 @@ function process_raw_comics(raw_data) {
     });
 }
 
-d3.csv("comic_data_2.csv", function(raw_data) {
+d3.csv("comic_data_4.csv", function(raw_data) {
     // Raw data comes back as list of dictionaries with values all being strings
     data = process_raw_comics(raw_data);
 
@@ -93,9 +93,12 @@ d3.csv("comic_data_2.csv", function(raw_data) {
 
     xscale.domain(dimensions);
 
-    ["ALIGN", "ALIVE", "GSM", "SEX", "ID"].forEach(function(k) {
+    ["ALIGN", "ALIVE", "SEXUALITY", "SEX", "IDENTITY"].forEach(function(k) {
+        var pair = k.toLowerCase()
+        pair = pair.charAt(0).toUpperCase() + pair.substr(1)
+        console.log(pair)
         var vals = d3.nest()
-                .key(function(d) { return [Math.round(d[k + '_id'], 0), d[k]]; })
+                .key(function(d) { return [Math.round(d[pair], 0), d[k]]; })
                 .entries(data)
                 .map(function(d) {return d.key});
 
@@ -106,9 +109,9 @@ d3.csv("comic_data_2.csv", function(raw_data) {
             dict[parseInt(parts[0])] = parts[1];
         });
 
-        axes[k + '_id'] = d3.svg.axis()
+        axes[pair] = d3.svg.axis()
             .orient("left")
-            .scale(yscale[k + '_id'])
+            .scale(yscale[pair])
             .tickValues(_.keys(dict))
             .tickFormat(function(d, i) { return dict[d]});
     });
@@ -282,6 +285,7 @@ function brush() {
         d3.select("#exclude-data").attr("disabled", "disabled");
     };
 
+    world_buttons();
     // Render selected lines
     paths(selected, foreground, brush_count, true);
 }
@@ -362,13 +366,55 @@ function data_table(sample) {
             .on("mouseover", highlight)
             .on("mouseout", unhighlight);
 
-    table.append("span")
-        .attr("class", "color-block")
-        .style("background", function(d) { return color(d[group],0.85) })
+    table
+        .style("background", function(d) { return color(d[group],0.2) })
+        .style("border-style", function(d) { return 'solid' })
+        .style("border-color", function(d) { return 'rgba(0,0,0,0.4)' })
+        .append("span")
+        .attr("class", "world-block")
+        .style("background", function(d) { return color(d[group],0.85) });
 
     table.append("span")
-        .text(function(d) { return d.name; })
+        .text(function(d) { return d.name; });
 }
+
+function world_buttons() {
+    var buttons = d3.select("#buttons")
+            .html("")
+            .selectAll("world-button")
+            .data(["DC", "Marvel"])
+            .enter().append("div")
+                .attr("class", "world-button")
+                .style("padding", "10px 10px 10px 10px")
+                .on("click", toggle_world);
+
+    buttons
+        .append("span")
+        .attr("class", "world-box")
+        .style("background", function(w) { return button_color(w) })
+
+    buttons.append("span")
+        .text(function(w) { return w });
+}
+
+function button_color(w) {
+    if (_.contains(excluded_groups, w)) {
+        return "rgba(200,200,200,1)";
+    }
+    return color(w, 1)
+}
+
+function toggle_world(w) {
+    console.log('test');
+    if (_.contains(excluded_groups, w)) {
+        excluded_groups = _.filter(excluded_groups, function(x) {return x != w});
+    } else {
+        excluded_groups.push(w);
+    }
+
+    brush()
+}
+
 
 // Highlight single polyline
 function highlight(d) {
@@ -382,16 +428,16 @@ function highlight(d) {
                  "Eye Color: " + d['EYE'],
                  "Hair Color: " + d['HAIR'],
                  "Year Made: " + d['YEAR'],
-                 "Number Of Appearances: " + d['APPEARANCES'],
                  "Alive Status: " + d['ALIVE'],
-                 "Sexual Orientation: " + d['GSM'],
+                 "Sexual Orientation: " + d['SEXUALITY'],
                  "Alignment: " + d['ALIGN'],
                  "ID Status: " + d['ID']].join('<br>')
 
-    d3.selectAll('#hero-info')
-        .html(html_text)
+    d3.selectAll('#hero-info').html(html_text)
+
     d3.select("#foreground").style("opacity", "0.25");
-    d3.selectAll(".row").style("opacity", function(p) { return (d[group] == p) ? null : "0.3" });
+    d3.selectAll(".row")
+        .style("opacity", function(p) { return (d[group] == p) ? null : "0.3" });
     path(d, highlighted, color(d[group],1));
 }
 
@@ -643,7 +689,7 @@ window.onresize = function() {
     width = document.body.clientWidth,
     height = d3.max([document.body.clientHeight-500, 220]);
 
-    w = width - m[1] - m[3],
+    w = width - m[1] - m[3] - 100,
     h = height - m[0] - m[2];
 
     d3.select("#chart")
@@ -655,7 +701,7 @@ window.onresize = function() {
         .style("padding", m.join("px ") + "px");
 
     d3.select("svg")
-        .attr("width", w + m[1] + m[3])
+        .attr("width", w)
         .attr("height", h + m[0] + m[2])
         .select("g")
             .attr("transform", "translate(" + m[3] + "," + m[0] + ")");
